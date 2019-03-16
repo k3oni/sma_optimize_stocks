@@ -2,6 +2,7 @@ pro sma_optimize_stocks, download=download, crypto=crypto, backtestdays=backtest
 
 ;Hi Reddit! 
 
+;Author: Kevin Wagner (correspondence to kwagner059@gmail.com)
 ;Updated: March 16, 2019
 
 ;----- Keywords:
@@ -30,8 +31,6 @@ if keyword_set(download) then spawn, './download_stocks.sh' else print, 'Downloa
 if keyword_set(crypto) then spawn, './download_crypto.sh'
 
 
-back_time=1.
-
 ;----------------------- end user input
 
 ;enable backtesting
@@ -40,20 +39,10 @@ if not keyword_set(backtestdays) then backtestdays=0.
 today=today_dec_date()-(backtestdays/365.25)
 print,today
 
+close, 5 ;close LUN to be opened later
 
-
-close, 5
-
-
-sigmas=[]
 names=[]
 ss=[]	;where to store closing stocks
-ds=[]	;where to store first derivatives of rates of change
-d2s=[]	;where to store second derivatives of rates of change
-ends=[]	;stock worth at end date
-currs=[]
-percs=[] ;model percent changes
-;n=[4,2,1,2,1,2,2,1]
 files=file_search(data_path,'*.csv',count=n_stocks)
 
 n=fltarr(n_stocks)
@@ -73,8 +62,7 @@ name=strmid(data_file,name_pos+1,name_endpos-name_pos-1)
 print, 'On file: ',files[stock]
 print,name
 
-data=read_csv(data_file);,types=["String","Double","Double","Double","Double","Double","Double"],
-;dates=data.field1 & closes=data.field2 & volumes=data.field3 & opens=data.field4 & highs=data.field5 & lows=data.field6
+data=read_csv(data_file)
 
 ;help, /structure, data
 if name eq 'ETH' or name eq 'BTC' or name eq 'LTC' or name eq 'ETC' or name eq 'DOGE' or name eq 'BCH' or name eq 'BTG' then begin
@@ -85,7 +73,6 @@ endelse;& volumes=data.field7 & opens=data.field2 & highs=data.field3 & lows=dat
 
 if typename(closes) eq 'STRING' then closes[where(closes eq 'null')]='0'
 
-;if typename(closes) eq 'STRING' then print, closes
 
 closes=float(closes)
 ;closes[where(closes le 0.)]=!values.f_nan
@@ -103,8 +90,6 @@ new_dates=dec_dates(yyyys,mms,dds)
 dates=double(new_dates)
 
 
-
-
 closes_new=[]
 for jjj=0,n_elements(closes)-1 do begin
 	a=strnumber(closes[jjj],val)
@@ -113,10 +98,8 @@ for jjj=0,n_elements(closes)-1 do begin
 endfor
 closes=closes_new
 
-
 ;this is necessary for backtesting
 closes = closes[where( dates le today)]  & dates=dates[where( dates le today)] 
-
 
 ;calculate RSI
 gains=[] & losses=[]
@@ -183,8 +166,6 @@ nanarr[*]=!values.f_nan
 
 ss=[ss,closes[n_elements(closes)-1]]  & names=[names,name]  
 
-;sig=stdvends
-
 	
 	if stock eq 0 then smas=sma else smas=[smas,sma]
 	if stock eq 0 then smads=smad else smads=[smads,smad]
@@ -198,8 +179,6 @@ revdates=reverse(dates)
 
 
 endfor
-;cgps_close,/pdf
-
 
 ;strategic planning happens here
 
@@ -252,18 +231,10 @@ smaordered_tgtpercs=tgtpercs[order]
 
 
 
-for ii=0,n_elements(healthy_names)-1 do begin
-	;if sigmas[ii] lt 5 then printf,2,'-----------------------------   5.0 sigma line   --------------------------------'
-	;if sigmas[ii] lt 3 then printf,2,'-----------------------------   3.0 sigma line   --------------------------------'
-;	printf,5, strcompress(string(ii+1)+ ' --- '+smaordered_healthy_names[ii]+' --- current price = '+string(sigfig(smaordered_healthy_ss[ii],4))+' --- 200 sma = '+string(sigfig(smaordered_healthy_sma200s[ii],3))+' --- 100 sma = '+string(sigfig(smaordered_healthy_sma100s[ii],3))+' --- 50 sma = '+string(sigfig(smaordered_healthy_sma50s[ii],3))+' --- 20 sma = '+string(sigfig(smaordered_healthy_sma20s[ii],3))+' --- sma200d = '+string(sigfig(100.*(smaordered_healthy_sma200ds[ii]),3))+'%/day --- sma100d = '+string(sigfig(100.*(smaordered_healthy_sma100ds[ii]),3))+'%/day --- sma50d = '+string(sigfig(100.*(smaordered_healthy_sma50ds[ii]),3))+'%/day --- sma20d = '+string(sigfig(100.*(smaordered_healthy_sma20ds[ii]),3))+'%/day --- w_avg d = '+string(sigfig(100.*(((smaordered_healthy_sma200ds[ii]*200.)+(smaordered_healthy_sma100ds[ii]*100.)+(smaordered_healthy_sma50ds[ii]*50.)+(smaordered_healthy_sma50ds[ii]*20.))/370.),3))+'%/day')
-
+for ii=0,n_elements(healthy_names)-1 do $
 	printf,5, strcompress(string(ii+1)+ ' --- '+smaordered_healthy_names[ii]+' --- price = '+string(sigfig(smaordered_healthy_ss[ii],4))+' --- sma = '+string(sigfig(smaordered_healthy_smas[ii],3))+' --- d/dt = '+string(sigfig(100.*(smaordered_healthy_smads[ii]),3))+'%/day' +' --- d2/d2t = '+string(sigfig(100.*(smaordered_healthy_smadds[ii]),3))+'%/day^2'+' --- '+string(fix(sigfig(outdate,2)))+'day tgt = '+string(sigfig(smaordered_tgts[ii],4))+' = '+string(sigfig(100.*(smaordered_tgtpercs[ii]-1.),3))+'%'+' --- RSI = '+string(sigfig(smaordered_healthy_rsis[ii],3)))
-endfor
-printf,5,'-------------------------------------------------------------'
-printf,5,'----------------------------'
+printf,5,'-----------------------------------------------------------------------------------------'
 close,5
-
-
 
 
 
