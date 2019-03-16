@@ -71,17 +71,18 @@ endif else begin
 		dates=data.field1 & closes=data.field5 
 endelse;& volumes=data.field7 & opens=data.field2 & highs=data.field3 & lows=data.field4
 
+;remove the header
+remove,0,dates,closes
+
 if typename(closes) eq 'STRING' then closes[where(closes eq 'null')]='0'
 
-
 closes=float(closes)
-;closes[where(closes le 0.)]=!values.f_nan
 
 missing=where(closes le 0.)
 if n_elements(missing) gt 1 then remove,missing, dates,closes
 
 
-;remove the most recent entry for date-sorting purposes
+;remove the first entry if it's still a string
 IF typename(dates[0]) eq 'STRING' then  remove,0,dates,closes
 ;convert to decimal dates
 ;PRINT, DATES
