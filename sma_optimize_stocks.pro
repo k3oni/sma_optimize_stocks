@@ -2,7 +2,6 @@ pro sma_optimize_stocks, download=download, crypto=crypto, backtestdays=backtest
 
 ;Hi Reddit! 
 
-;Author: Kevin Wagner (correspondence to kwagner059@gmail.com)
 ;Updated: March 16, 2019
 
 ;----- Keywords:
