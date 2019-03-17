@@ -233,10 +233,7 @@ if keyword_set(outdays) then outdate=outdays else outdate=10.;days
 ;tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate)))
 
 ;up to third
-tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate))+(0.33*healthy_smaddds*(outdate*outdate*outdate)))
-
-;up to fourth
-;tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate))+(0.33*healthy_smaddds*(outdate*outdate*outdate))+(0.25*healthy_smadddds*(outdate*outdate*outdate*outdate)))
+tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate))+((1./6.)*healthy_smaddds*(outdate*outdate*outdate)))
 
 
 tgtpercs=tgts/healthy_ss
