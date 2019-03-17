@@ -3,8 +3,10 @@ pro backtest
 ;before running make sure that only SPY, DIA, and NDAQ exist in the data folder
 ;otherwise the run time will be way longer than necessary
 
-totalbackdays=1000
+totalbackdays=5000
 futuredays=10
+
+smmax=200 & smmin=20
 
 
 diaup=0 & diadown=0
@@ -14,11 +16,15 @@ ndaqaccuracies=[]
 spyaccuracies=[]
 diaaccuracies=[]
 
+ndaqinaccuracies=[]
+spyinaccuracies=[]
+diainaccuracies=[]
+
 for ii=0,totalbackdays/futuredays do begin
 
 days=totalbackdays-(float(ii)*futuredays)
 
-sma_optimize_stocks,backtestdays=days,outdays=futuredays
+sma_optimize_stocks,backtestdays=days,outdays=futuredays, smmin=smmin, smmax=smmax
 
 restore, '~/Data/Stocks/output.sav'
 ;variable names = smaordered_healthy_names,smaordered_healthy_ss, smaordered_tgts
@@ -40,9 +46,9 @@ if ii gt 0 then begin
 	if (diaprice-prediaprice)/(diaprediction-prediaprice) gt 0 then diaup=diaup+1 else diadown=diadown+1
 
 	;only store the accuracy in price swing when the denominator is nonzero
-if (ndaqprice-prendaqprice) ne 0. then ndaqaccuracies=[ndaqaccuracies,ndaqaccuracy]
-if (spyprice-prespyprice) ne 0. then spyaccuracies=[spyaccuracies,spyaccuracy]
-if (diaprice-prediaprice) ne 0. then diaaccuracies=[diaaccuracies,diaaccuracy]
+if (ndaqprice-prendaqprice)/(ndaqprediction-prendaqprice) gt 0 then ndaqaccuracies=[ndaqaccuracies,ndaqaccuracy] else ndaqinaccuracies=[ndaqinaccuracies,ndaqaccuracy]
+if (spyprice-prespyprice)/(spyprediction-prespyprice) gt 0 then spyaccuracies=[spyaccuracies,spyaccuracy] else spyinaccuracies=[spyinaccuracies,spyaccuracy]
+if (diaprice-prediaprice)/(diaprediction-prediaprice) gt 0 then diaaccuracies=[diaaccuracies,diaaccuracy] else diainaccuracies=[diainaccuracies,diaaccuracy]
 
 print, 'Back test days = ',days
 print, 'NDAQ accuracy % = ',ndaqaccuracy
@@ -61,14 +67,30 @@ prendaqprice=ndaqprice
 prespyprice=spyprice
 prediaprice=diaprice
 
-if n_elements(ndaqaccuracies) gt 1 and n_elements(spyaccuracies) gt 1 and n_elements(diaaccuracies) gt 1  then begin
+if n_elements(ndaqaccuracies) gt 1 and n_elements(spyaccuracies) gt 1 and n_elements(diaaccuracies) gt 1 and $
+	n_elements(ndaqinaccuracies) gt 1 and n_elements(spyinaccuracies) gt 1 and n_elements(diainaccuracies) gt 1  then begin
 print,'---------------------------------------------'
-
+print, 'Moves in the predicted direction:'
 print, 'NDAQ moves predicted / actual % = ',mean(ndaqaccuracies,/nan)
 print, 'SPY moves predicted / actual % = ',mean(spyaccuracies,/nan)
 print, 'DIA moves predicted / actual % = ',mean(diaaccuracies,/nan)
 print
-print, 'Average abs. moves predicted / actual % = ',mean( [mean(diaaccuracies),mean(spyaccuracies),mean(ndaqaccuracies)],/nan)
+print, 'Average moves predicted / actual % = ',mean( [mean(diaaccuracies),mean(spyaccuracies),mean(ndaqaccuracies)],/nan)
+print,'---------------------------------------------'
+print, 'Moves in the unpredicted direction:'
+print, 'NDAQ moves predicted / actual % = ',mean(ndaqinaccuracies,/nan)
+print, 'SPY moves predicted / actual % = ',mean(spyinaccuracies,/nan)
+print, 'DIA moves predicted / actual % = ',mean(diainaccuracies,/nan)
+print
+print, 'Average moves predicted / actual % = ',mean( [mean(diainaccuracies),mean(spyinaccuracies),mean(ndaqinaccuracies)],/nan)
+
+print,'---------------------------------------------'
+print, 'Moves in any direction:'
+print, 'NDAQ moves predicted / actual % = ',mean([ndaqaccuracies,ndaqinaccuracies],/nan)
+print, 'SPY moves predicted / actual % = ',mean([spyaccuracies,spyinaccuracies],/nan)
+print, 'DIA moves predicted / actual % = ',mean([diaaccuracies,diainaccuracies],/nan)
+print
+print, 'Average moves predicted / actual % = ',mean( [mean([ndaqaccuracies,ndaqinaccuracies],/nan),mean([spyaccuracies,spyinaccuracies],/nan),mean([diaaccuracies,diainaccuracies],/nan)],/nan)
 
 print,'---------------------------------------------'
 
