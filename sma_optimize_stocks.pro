@@ -3,7 +3,7 @@ pro sma_optimize_stocks, download=download, crypto=crypto, backtestdays=backtest
 ;Hi Reddit! 
 
 ;Author: Kevin Wagner (correspondence to kwagner059@gmail.com)
-;Updated: March 16, 2019
+;Updated: March 17, 2019
 
 ;----- Keywords:
 ;download: binary switch to re-download data or not
@@ -14,7 +14,7 @@ pro sma_optimize_stocks, download=download, crypto=crypto, backtestdays=backtest
 
 ;outdays (optional) days in future for prediction (default = 10)
 
-;smmax (optional) will set the maximum SMA period (default = 200)
+;smmax (optional) will set the maximum SMA period (default = 50)
 
 ;smmin (optional) will set the minimum SMA period (default=10)
 
@@ -131,7 +131,7 @@ nanarr=fltarr(200)
 nanarr[*]=!values.f_nan
 
 ;running a loop over multiple SMAs
-	if not keyword_set(smmax) then smmax=200
+	if not keyword_set(smmax) then smmax=50
 		smmax=min([smmax,n_elements(closes)])
 	if not keyword_set(smmin) then smmin=10
 	for sm=smmax,smmin,-1 do begin
@@ -224,7 +224,7 @@ healthy_smadddds=smadddds[healthy]
 healthy_ss=ss[healthy]
 
 
-if keyword_set(outdays) then outdate=outdays else outdaye=10.;days
+if keyword_set(outdays) then outdate=outdays else outdate=10.;days
 
 ;up to 1st
 ;tgts=healthy_ss*(1.+(healthy_smads*outdate))
@@ -278,6 +278,6 @@ close,5
 		print
 print, 'Comleted in ',endtime,' minutes.'
 
-save, filename='~/Data/Stocks/output.sav',smaordered_healthy_names,smaordered_healthy_ss, smaordered_tgts
+save, filename='~/Data/Stocks/output.sav',smaordered_healthy_names,smaordered_healthy_ss, smaordered_tgts, smaordered_healthy_rsis
 
 end
