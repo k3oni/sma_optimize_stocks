@@ -1,4 +1,4 @@
-pro sma_optimize_stocks, download=download, crypto=crypto, backtestdays=backtestdays
+pro sma_optimize_stocks, download=download, crypto=crypto, backtestdays=backtestdays,outdays=outdays, smmax=smmax, smmin=smmin
 
 ;Hi Reddit! 
 
@@ -10,7 +10,14 @@ pro sma_optimize_stocks, download=download, crypto=crypto, backtestdays=backtest
 ;
 ;crpyto: binary switch to re-download cryptocurrency data (running with /download and not /crypto will also delete past crypto)
 ;
-;backtestdays: will change today's date to today - backtestdays, useful for historical back-testing and defining a strategy
+;backtestdays (optional): will change today's date to today - backtestdays, useful for historical back-testing and defining a strategy
+
+;outdays (optional) days in future for prediction (default = 10)
+
+;smmax (optional) will set the maximum SMA period (default = 200)
+
+;smmin (optional) will set the minimum SMA period (default=10)
+
 
 ;DISCLAIMER: this script was created as a personal endeavor and not in collaboration or correspondence with any financial or 
 ;educational institution. There is no assurance or warranty on how well the models or SMA-based predictions will correspond
@@ -124,19 +131,21 @@ nanarr=fltarr(200)
 nanarr[*]=!values.f_nan
 
 ;running a loop over multiple SMAs
-	smmax=200
+	if not keyword_set(smmax) then smmax=200
 		smmax=min([smmax,n_elements(closes)])
-	smmin=10
+	if not keyword_set(smmin) then smmin=10
 	for sm=smmax,smmin,-1 do begin
 		sma=smooth([closes,nanarr],sm,/nan)
 		smad=deriv(sma)
 		smadd=deriv(smad)
 		smaddd=deriv(smadd)
+		smadddd=deriv(smaddd)
 
 		sma=sma[n_elements(closes)-1]
 		smad=smad[n_elements(closes)-1]/sma
 		smadd=smadd[n_elements(closes)-1]/sma
 		smaddd=smaddd[n_elements(closes)-1]/sma
+		smadddd=smadddd[n_elements(closes)-1]/sma
 
 		
 		if sm eq smmax then smss=sm else smss=[smss,sm]
@@ -144,6 +153,7 @@ nanarr[*]=!values.f_nan
 		if sm eq smmax then smadss=smad else smadss=[smadss,smad]
 		if sm eq smmax then smaddss=smadd else smaddss=[smaddss,smadd]
 		if sm eq smmax then smadddss=smaddd else smadddss=[smadddss,smaddd]
+		if sm eq smmax then smaddddss=smadddd else smaddddss=[smaddddss,smadddd]
 
 		weight = 1.0/float(sm) ;here define the weights, a good choice is probably with 1/(sm)
 		
@@ -162,6 +172,8 @@ nanarr[*]=!values.f_nan
 		sma=total(smass*weights)/total(weights)
 		smad=total(smadss*weights)/total(weights)
 		smadd=total(smaddss*weights)/total(weights)
+		smaddd=total(smadddss*weights)/total(weights)
+		smadddd=total(smaddddss*weights)/total(weights)
 
 
 
@@ -171,6 +183,9 @@ ss=[ss,closes[n_elements(closes)-1]]  & names=[names,name]
 	if stock eq 0 then smas=sma else smas=[smas,sma]
 	if stock eq 0 then smads=smad else smads=[smads,smad]
 	if stock eq 0 then smadds=smadd else smadds=[smadds,smadd]
+	if stock eq 0 then smaddds=smaddd else smaddds=[smaddds,smaddd]
+	if stock eq 0 then smadddds=smadddd else smadddds=[smadddds,smadddd]
+
 	if stock eq 0 then rsis=rsi else rsis=[rsis,rsi]
 
 
@@ -188,7 +203,7 @@ openw,5,strcompress(outpath+'Stocks_sma_full_avg_strategy_'+string(today)+'.txt'
 
 
 ;change this to use a different metric for stock health
-healthy=indgen(n_elements(names)-1) ;just take everything, i.e. turn off the health check
+healthy=indgen(n_elements(names)) ;just take everything, i.e. turn off the health check
 
 
 healthy_names=names[healthy]
@@ -202,12 +217,28 @@ healthy_smads=smads[healthy]
 
 healthy_smadds=smadds[healthy]
 
+healthy_smaddds=smaddds[healthy]
+healthy_smadddds=smadddds[healthy]
+
 
 healthy_ss=ss[healthy]
 
 
-outdate=10. ;days
-tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate)))
+if keyword_set(outdays) then outdate=outdays else outdaye=10.;days
+
+;up to 1st
+;tgts=healthy_ss*(1.+(healthy_smads*outdate))
+
+;up to 2nd
+;tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate)))
+
+;up to third
+tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate))+(0.33*healthy_smaddds*(outdate*outdate*outdate)))
+
+;up to fourth
+;tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate))+(0.33*healthy_smaddds*(outdate*outdate*outdate))+(0.25*healthy_smadddds*(outdate*outdate*outdate*outdate)))
+
+
 tgtpercs=tgts/healthy_ss
 
 sma_metric=(tgtpercs)
@@ -222,6 +253,9 @@ smaordered_healthy_smas=healthy_smas[order]
 
 smaordered_healthy_smads=healthy_smads[order]
 smaordered_healthy_smadds=healthy_smadds[order]
+smaordered_healthy_smaddds=healthy_smaddds[order]
+smaordered_healthy_smadddds=healthy_smadddds[order]
+
 smaordered_healthy_rsis=healthy_rsis[order]
 
 healthy_rsis=rsis[healthy]
@@ -233,7 +267,7 @@ smaordered_tgtpercs=tgtpercs[order]
 
 
 for ii=0,n_elements(healthy_names)-1 do $
-	printf,5, strcompress(string(ii+1)+ ' --- '+smaordered_healthy_names[ii]+' --- price = '+string(sigfig(smaordered_healthy_ss[ii],4))+' --- sma = '+string(sigfig(smaordered_healthy_smas[ii],3))+' --- d/dt = '+string(sigfig(100.*(smaordered_healthy_smads[ii]),3))+'%/day' +' --- d2/d2t = '+string(sigfig(100.*(smaordered_healthy_smadds[ii]),3))+'%/day^2'+' --- '+string(fix(sigfig(outdate,2)))+'day tgt = '+string(sigfig(smaordered_tgts[ii],4))+' = '+string(sigfig(100.*(smaordered_tgtpercs[ii]-1.),3))+'%'+' --- RSI = '+string(sigfig(smaordered_healthy_rsis[ii],3)))
+	printf,5, strcompress(string(ii+1)+ ' --- '+smaordered_healthy_names[ii]+' --- price = '+string(sigfig(smaordered_healthy_ss[ii],4))+' --- sma = '+string(sigfig(smaordered_healthy_smas[ii],3))+' --- d/dt = '+string(sigfig(100.*(smaordered_healthy_smads[ii]),3))+'%/day' +' --- d2/d2t = '+string(sigfig(100.*(smaordered_healthy_smadds[ii]),3))+'%/day^2'+' --- d3/d3t = '+string(sigfig(100.*(smaordered_healthy_smaddds[ii]),3))+'%/day^3'+' --- '+string(fix(sigfig(outdate,2)))+'day tgt = '+string(sigfig(smaordered_tgts[ii],4))+' = '+string(sigfig(100.*(smaordered_tgtpercs[ii]-1.),3))+'%'+' --- RSI = '+string(sigfig(smaordered_healthy_rsis[ii],3)))
 printf,5,'-----------------------------------------------------------------------------------------'
 close,5
 
@@ -244,5 +278,6 @@ close,5
 		print
 print, 'Comleted in ',endtime,' minutes.'
 
+save, filename='~/Data/Stocks/output.sav',smaordered_healthy_names,smaordered_healthy_ss, smaordered_tgts
 
 end
