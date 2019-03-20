@@ -3,7 +3,7 @@ pro sma_optimize_stocks, download=download, crypto=crypto, backtestdays=backtest
 ;Hi Reddit! 
 
 ;Author: Kevin Wagner (correspondence to kwagner059@gmail.com)
-;Updated: March 17, 2019
+;Updated: March 16, 2019
 
 ;----- Keywords:
 ;download: binary switch to re-download data or not
@@ -230,13 +230,15 @@ if keyword_set(outdays) then outdate=outdays else outdate=10.;days
 ;tgts=healthy_ss*(1.+(healthy_smads*outdate))
 
 ;up to 2nd
-;tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate)))
+;tgts=healthy_smas*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate)))
 
 ;up to third
 tgts=healthy_ss*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate))+((1./6.)*healthy_smaddds*(outdate*outdate*outdate)))
 
+;up to fourth
+;tgts=healthy_smas*(1.+(healthy_smads*outdate)+(0.5*healthy_smadds*(outdate*outdate))+((1./6.)*healthy_smaddds*(outdate*outdate*outdate))+((1./24.)*healthy_smadddds*(outdate*outdate*outdate*outdate)))
 
-tgtpercs=tgts/healthy_ss
+tgtpercs=tgts/healthy_ss ;target SMA price compared to the price now
 
 sma_metric=(tgtpercs)
 
